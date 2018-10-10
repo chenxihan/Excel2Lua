@@ -9,6 +9,9 @@ import sys
 import time
 import re
 
+isdebug = False
+sleeptime = 600
+
 reload(sys)
 encoding="utf-8"
 sys.setdefaultencoding(encoding)
@@ -28,7 +31,8 @@ with open("./alias.txt") as alias:
 				ALIAS_DICT[l[0]]=l[1].rstrip('\n')
 #alias.txt
 for x in ALIAS_DICT.keys():
-	print(x,ALIAS_DICT[x])
+	if isdebug:
+		print(x,ALIAS_DICT[x])
 
 def foreach_parse(val,sp,parser,attr):
 	ret=[]
@@ -123,19 +127,23 @@ def parse_integer(s,attr):
 				s=s[:-1]
 			else:
 				s=s[:-1]+'0'
-	print("def parse_integer : s=",s,"attr=",attr)
+	if isdebug:
+		print("def parse_integer : s=",s,"attr=",attr)
+	#返回浮点数x的四舍五入值。
 	return int(round(float(s)))
 
 def parse_double(val,attr):
 	if val=="" and attr.find("e")!=-1:
 		return None
-	print("def parse_double : val=",val,"attr=",attr)
+	if isdebug:
+		print("def parse_double : val=",val,"attr=",attr)
 	return float(val)
 
 def parse_string(val,attr):
 	if val=="" and attr.find("e")!=-1:
 		return None
-	print("def parse_string : val=",val,"attr=",attr)
+	if isdebug:
+		print("def parse_string : val=",val,"attr=",attr)
 	return str(val).encode(encoding)
 
 def parser_any(val,attr):
@@ -143,14 +151,16 @@ def parser_any(val,attr):
 	if mobj:
 		parser=mobj.group(1)
 		valn=mobj.group(2)
-		print("def parser_any : val=",val,"attr=",attr)
+		if isdebug:
+			print("def parser_any : val=",val,"attr=",attr)
 		return get_parser(parser)(valn,attr)
 	elif val=="" and attr.find("e")!=-1:
-		print("def parser_any : return None,val=",val,"attr=",attr)
+		if isdebug:
+			print("def parser_any : return None,val=",val,"attr=",attr)
 		return None
 	else:
 		print("Any type error")
-		time.sleep(30)
+		time.sleep(sleeptime)
 		raise Exception("Any type error")
 
 
@@ -158,19 +168,21 @@ PARSER={}
 PARSER["int"]=parse_integer
 PARSER["double"]=parse_double
 PARSER["string"]=parse_string
-PARSER["effectcast"]=parse_effectcast
-PARSER["any"]=parser_any
+#PARSER["effectcast"]=parse_effectcast
+#PARSER["any"]=parser_any
 def get_parser(s):
 	parser=PARSER.get(s,None)
 	if parser:
-		print("PARSER",s)
+		if isdebug:
+			print("IN PARSER",s)
 		return parser
 	return build_array(s)
 
 def build_array(s):
 	alias_s=ALIAS_DICT.get(s,None)
 	if alias_s:
-		print("ALIAS_DICT:",s)
+		if isdebug:
+			print("IN ALIAS_DICT:",s)
 		s=alias_s
 	mobj=re.match(r"array<(.*?),(.*)>",s)
 	if mobj:
@@ -192,7 +204,7 @@ def build_array(s):
 		return array_func
 	else:
 		print("Invalid type ",str(s))
-		time.sleep(30)
+		time.sleep(sleeptime)
 		raise Exception("Invalid type "+str(s))
 
 
@@ -245,7 +257,7 @@ def trans_dict(obj,deep,lineding_deep):
 					v=v+"['"+str(k)+"']="
 			else:
 				print("Invalid key type ",k)
-				time.sleep(30)
+				time.sleep(sleeptime)
 				raise Exception("Invalid key type")
 
 			v=v+trans_obj(obj[k],deep,lineding_deep);
@@ -260,30 +272,37 @@ def trans_obj(obj,deep,lineding_deep):
 	# 函数来判断一个对象是否是int的类型，类似 type()。
 	if isinstance(obj, int):
 		#函数将对象转化为适于人阅读的形式,转string类型。
-		print("int:",obj)
+		if isdebug:
+			print("int:",obj)
 		return str(obj)
 	elif isinstance(obj, long):
-		print("long:",obj)
+		if isdebug:
+			print("long:",obj)
 		return str(obj)
 	elif isinstance(obj, float):
-		print("float:",obj)
+		if isdebug:
+			print("float:",obj)
 		return str(obj)
 	elif isinstance(obj, str):
 		#str.replace(old, new[, max])
-		print("str:",obj)
+		if isdebug:
+			print("str:",obj)
 		return "\""+obj.replace('\"','\\\"')+"\""
 	elif isinstance(obj,list):
-		print("list:",obj)
+		if isdebug:
+			print("list:",obj)
 		return trans_list(obj,deep+1,lineding_deep)
 	elif isinstance(obj,dict):
-		print("dict:",obj)
+		if isdebug:
+			print("dict:",obj)
 		return trans_dict(obj,deep+1,lineding_deep)
 	elif obj==None:
-		print("None:",obj)
+		if isdebug:
+			print("None:",obj)
 		return "nil"
 	else:
 		print("Error type:",str(type(obj)))
-		time.sleep(30)
+		time.sleep(sleeptime)
 		raise Exception("Invalid obj "+str(type(obj)))
 
 def trans2lua(out,obj,lineding_deep):
@@ -293,10 +312,11 @@ def trans2lua(out,obj,lineding_deep):
 	out.write("\n")
 
 def transfer_z(sret,cret,booksheet,name):
-	print("def transfer_z:",name,"row:",booksheet.nrows)
+	if isdebug:
+		print("def transfer_z:",name,"row:",booksheet.nrows)
 	if booksheet.nrows<4:
 		print("Error format: filename:",name,booksheet.name.encode(encoding))
-		time.sleep(30)
+		time.sleep(sleeptime)
 		raise Exception("Error format "+ name +"."+booksheet.name.encode(encoding))
 
 	stb={}
@@ -316,8 +336,12 @@ def transfer_z(sret,cret,booksheet,name):
 				colname=booksheet.cell(2,col).value.encode(encoding)
 				attr=booksheet.cell(3,col).value.encode(encoding)
 				val=booksheet.cell(row,col).value
+				if isdebug:
+					print("row=",row+1,"col=",col+1,"coltype=",coltype,"colname=",colname,"attr=",attr,"val=",val,)
 				rval=None
 				if len(attr)==0:
+					continue
+				if attr.find("e")!=-1 and not val:
 					continue
 
 				try:
@@ -325,7 +349,7 @@ def transfer_z(sret,cret,booksheet,name):
 					if attr.find("k")!=-1:
 						if key!=None:
 							print("mult key using:",)
-							time.sleep(30)
+							time.sleep(sleeptime)
 							raise Exception("mult key using!")
 						rval=parser(val,attr.replace('c',''))
 						key=rval
@@ -350,19 +374,18 @@ def transfer_z(sret,cret,booksheet,name):
 
 				except Exception as e:
 					import traceback
-					print(Exception("Exception at "+name +"."+booksheet.name.encode(encoding)
-						+"("+str(row)+","+str(col)+")\n"
-						+repr(e)+"\n"
-						+traceback.format_exc()))
-					time.sleep(30)
+					print("Exception at "+name +"."+booksheet.name.encode(encoding)
+						+"("+str(row+1)+","+str(col+1)+")\n"
+						+repr(e)+"\n")
+						#+traceback.format_exc()))
+					time.sleep(sleeptime)
 					raise Exception("Exception at "+name +"."+booksheet.name.encode(encoding)
 						+"("+str(row)+","+str(col)+")\n"
 						+repr(e)+"\n"
 						+traceback.format_exc())
-
 			if key==None:
 				print("must set a key")
-				time.sleep(30)
+				time.sleep(sleeptime)
 				raise Exception("must set a key")
 			stb[key]=srt
 			ctb[key]=crt
@@ -375,7 +398,7 @@ def transfer_z(sret,cret,booksheet,name):
 def transfer_y(sret,cret,booksheet,name):
 	if booksheet.nrows<3:
 		print("Error format: filename:",name,booksheet.name.encode(encoding))
-		time.sleep(30)
+		time.sleep(sleeptime)
 		raise Exception("Error format "+ name +"."+booksheet.name.encode(encoding))
 
 	key_coltype=booksheet.cell(1,0).value.encode(encoding)
@@ -421,9 +444,8 @@ def transfer(name):
 	
 	for booksheet in workbook.sheets():
 		booksheetname=booksheet.name.encode(encoding)
-
-		print("booksheetname :",booksheetname)
-
+		if isdebug:
+			print("booksheetname :",booksheetname)
 		if booksheetname.startswith("y_"):
 			transfer_y(sret,cret,booksheet,name)
 			continue;
@@ -458,7 +480,8 @@ def main():
 	#获取所有文件
 	fs=grap_infs(indir)
 	for fname in fs:
-		print("===============>> file_name:"+fname)
+		if isdebug:
+			print("===============>> file_name:"+fname)
 		#生成的s、c的lua文件的路径
 		luafs=[]
 		#获取单个文件中的数据分别存在s和c的字典中
@@ -468,8 +491,8 @@ def main():
 			#创建文件的名字
 			fn=serveroutdir+"/"+k[2:]+".lua"
 			luafs.append(fn)
-			print("s filename: ",fn,"s key:",k)#,"s value:",s[k])
-
+			if isdebug:
+				print("========== s   filename: ",fn,"s key:",k)#,"s value:",s[k])
 			#打开一个文件只用于写入。如果该文件已存在则打开文件，并从开头开始编辑，即原有内容会被删除。如果该文件不存在，创建新文件。
 			out=open(fn,"w")
 			#转成lua格式并写入
@@ -480,17 +503,18 @@ def main():
 		for k in c.keys():
 			fn=clientoutdir+"/"+k[2:]+".lua"
 			luafs.append(fn)
-			print("c filename: ",fn,"c key:",k)#,"c value:",c[k])
+			if isdebug:
+				print("========== c   filename: ",fn,"c key:",k)#,"c value:",c[k])
 
 			out=open(fn,"w")
 			trans2lua(out,c[k],deep_set)
 			out.close()
 		#用cmd的lua命令打开lua文件，测试其正确性
 		lua_test(luafs)
-	return 0
 
+		print("end......................")
+		#time.sleep(sleeptime)
+	return 0
 
 if __name__=="__main__":
 	main()
-print("end......................")
-time.sleep(600)
