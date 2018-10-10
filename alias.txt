@@ -1,0 +1,7 @@
+# 别名文件,用于array类型嵌套
+tableint=array<:,integer>
+#tableint2=array<;,tableint>
+#aoi=array<:,integer,integer,integer,integer,double,double,integer>
+#aoi_array=array<|,aoi>
+pos=array<:,double>
+position=array<|,pos>
